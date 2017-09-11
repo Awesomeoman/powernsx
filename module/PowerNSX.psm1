@@ -26163,6 +26163,57 @@ function Add-NsxServiceGroupMember {
     end {}
 }
 
+function Remove-NsxServiceGroupMember {
+
+    <#
+    .SYNOPSIS
+    Removes a single Service, numerous Services, or a Service Group from a Service
+    Group
+
+    .DESCRIPTION
+    Removes the defined Service or Service Group from an NSX Service Group. Service
+    groups contain a mixture of selected ports to represent a potential
+    grouping of like ports.
+
+    This cmdlet removes the defined Services or Service Groups within a Service
+    Group for specific or all Service Groups
+
+    .EXAMPLE
+    PS C:\> Get-NsxServiceGroup Heartbeat | Remove-NsxServiceGroupMember -Member $Service1
+
+    PS C:\> get-nsxservicegroup Service-Group-4 | Remove-NsxServiceGroupMember $Service1,$Service2
+
+    #>
+
+    param (
+        #Mastergroup added from Get-NsxServiceGroup
+        [Parameter (Mandatory = $true, ValueFromPipeline = $true)]
+        [ValidateScript( { ValidateServiceGroup $_ })]
+        [System.Xml.XmlElement]$ServiceGroup,
+        [Parameter (Mandatory = $true, Position = 1)]
+        [ValidateScript( { ValidateServiceOrServiceGroup $_ })]
+        #The [] in XmlElement means it can expect more than one object!
+        [System.Xml.XmlElement[]]$Member,
+        [Parameter (Mandatory = $False)]
+        #PowerNSX Connection object
+        [ValidateNotNullOrEmpty()]
+        [PSCustomObject]$Connection = $defaultNSXConnection
+    )
+
+    begin {}
+    process {
+
+        foreach ($Mem in $Member) {
+            $URI = "/api/2.0/services/applicationgroup/$($ServiceGroup.objectId)/members/$($Mem.objectId)"
+            $null = invoke-nsxwebrequest -method "DELETE" -uri $URI -connection $connection
+            Write-Progress -activity "Removing Service or Service Group $($Mem) from Service Group $($ServiceGroup)"
+        }
+
+    }
+    end {}
+}
+
+
 function Get-NsxApplicableMember {
 
     <#
